@@ -4,7 +4,9 @@ const User = require("../models/User");
 const verify = async (req, res, next) => {
   try {
     const token = req.cookies.token;
-    if (!token) throw new Error("Token is required");
+    if (!token) {
+      return res.status(401).json({ msg: "Token is required" });
+    }
 
     const data = await jwt.verify(token, process.env.JWT_KEY);
     if (data) {
