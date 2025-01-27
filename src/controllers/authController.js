@@ -59,4 +59,12 @@ module.exports = {
       res.status(400).json({ msg: err.message });
     }
   },
+
+  logout: async function (req, res) {
+    res.cookie("token", null, {
+      expires: new Date(Date.now()),
+    });
+
+    res.json({ message: "Logout successful" });
+  },
 };
