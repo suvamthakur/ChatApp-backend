@@ -16,7 +16,7 @@ module.exports = {
       res.cookie("token", token, {
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days from now
         httpOnly: true, // Prevent JavaScript from accessing the cookie
-        secure: process.env.NODE_ENV === "production", // Only set cookies over HTTPS in production
+        secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
       });
 
@@ -47,7 +47,7 @@ module.exports = {
       res.cookie("token", token, {
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
         httpOnly: true, // Prevent JavaScript from accessing the cookie
-        secure: process.env.NODE_ENV === "production", // Only set cookies over HTTPS in production
+        secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
       });
 
