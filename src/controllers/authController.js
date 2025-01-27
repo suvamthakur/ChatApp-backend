@@ -63,6 +63,9 @@ module.exports = {
   logout: async function (req, res) {
     res.cookie("token", null, {
       expires: new Date(Date.now()),
+      httpOnly: true, // Prevent JavaScript from accessing the cookie
+      secure: process.env.NODE_ENV, // Only set cookies over HTTPS in production
+      sameSite: "None", // Allow cross-origin cookies
     });
 
     res.json({ message: "Logout successful" });
