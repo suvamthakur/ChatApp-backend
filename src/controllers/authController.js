@@ -19,6 +19,7 @@ module.exports = {
         secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
         path: "/",
+        domain: ".onrender.com",
       });
 
       res.status(201).json({
@@ -51,6 +52,7 @@ module.exports = {
         secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
         path: "/",
+        domain: ".onrender.com",
       });
 
       res.status(200).json({
