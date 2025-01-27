@@ -18,8 +18,6 @@ module.exports = {
         httpOnly: true, // Prevent JavaScript from accessing the cookie
         secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
-        path: "/",
-        domain: "https://chatapp-joww.onrender.com",
       });
 
       res.status(201).json({
@@ -51,8 +49,6 @@ module.exports = {
         httpOnly: true, // Prevent JavaScript from accessing the cookie
         secure: true, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
-        path: "/",
-        domain: "https://chatapp-joww.onrender.com",
       });
 
       res.status(200).json({
