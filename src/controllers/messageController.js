@@ -1,6 +1,8 @@
 const uploadOnCloudinary = require("../lib/cloudinary");
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
+const Bot = require("../models/Bot");
+const model = require("../lib/gemini");
 
 module.exports = {
   addMessage: async function (req, res) {
@@ -87,7 +89,7 @@ module.exports = {
           throw new Error("Message can't be deleted");
         }
       } else {
-        if (!messageData.senderId.equals(userId)) {
+        if (!messageData.senderId.equals(userId) && !chatData.isBot) {
           throw new Error("Message can't be deleted");
         }
       }
@@ -110,6 +112,43 @@ module.exports = {
       }
 
       res.status(200).json({ msg: "Message deleted successfully" });
+    } catch (err) {
+      res.status(400).json({ msg: err.message });
+    }
+  },
+
+  getAIresponse: async function (req, res) {
+    try {
+      const content = req.body.content;
+      const chatId = req.params.chatId;
+
+      const prompt = `Role: You are a helpful chatbot within a chat application. 
+            - Your name is Agent
+            - Name of the developer pf this chat application is Suvam Thakur
+            
+            1.  Respond to user messages in a conversational and friendly manner.
+            2.  If the user asks a question, provide a concise and accurate answer.
+            3.  If you don't know the answer or the query is irrelevant, respond with "I'm sorry, I don't understand" or "I'm not able to help with that."
+            4. If the user makes a statement, acknowledge it appropriately.
+            5. Keep your responses short and to the point.
+            6. If given previous conversation, consider it when creating your response.
+
+            User Message: ${content}
+
+            Response:`;
+      const result = await model.generateContent(prompt);
+      const msg = result.response.text();
+
+      const bot = await Bot.findOne({});
+
+      const message = await Message.create({
+        senderId: bot._id,
+        chatId: chatId,
+        senderName: bot.name,
+        content: msg,
+      });
+
+      res.status(200).json({ data: message });
     } catch (err) {
       res.status(400).json({ msg: err.message });
     }

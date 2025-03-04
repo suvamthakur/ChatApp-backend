@@ -1,6 +1,7 @@
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
 const User = require("../models/User");
+const Bot = require("../models/Bot");
 const uploadOnCloudinary = require("../lib/cloudinary");
 
 module.exports = {
@@ -127,7 +128,26 @@ module.exports = {
   getMessages: async function (req, res) {
     try {
       const chatId = req.params.chatId;
-      const messages = await Message.find({ chatId }).populate("senderId");
+      const chat = await Chat.findById(chatId);
+
+      // Without control block .populate() will give error because of chatbot message
+      let messages;
+      if (!chat.isBot) {
+        messages = await Message.find({ chatId }).populate("senderId");
+      } else {
+        messages = await Message.find({ chatId });
+
+        for (message of messages) {
+          const user = await User.findById(message.senderId);
+
+          if (user) {
+            message["senderId"] = user;
+          } else {
+            const bot = await Bot.findById(message.senderId);
+            message["senderId"] = bot;
+          }
+        }
+      }
 
       let messageList = [];
       messages.forEach((message) => {
@@ -152,6 +172,7 @@ module.exports = {
 
       res.status(200).json({ data: messageList });
     } catch (err) {
+      console.log(err);
       res.status(400).json({ msg: err.message });
     }
   },

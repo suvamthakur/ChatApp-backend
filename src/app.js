@@ -1,11 +1,13 @@
 const express = require("express");
 const app = express();
 const dotenv = require("dotenv");
+dotenv.config();
 const connectDB = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const socketController = require("./controllers/socketController");
 const { instrument } = require("@socket.io/admin-ui");
+const port = process.env.PORT;
 
 const { createServer } = require("http");
 const server = createServer(app);
@@ -16,10 +18,6 @@ const io = new Server(server, {
     credentials: true,
   },
 });
-
-// It will load environment variables from .env into process.env
-dotenv.config();
-const port = process.env.PORT;
 
 // It allows the backend server to specify which origins (domains) can interact with it.
 app.use(
