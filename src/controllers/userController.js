@@ -1,5 +1,6 @@
 const Chat = require("../models/Chat");
 const User = require("../models/User");
+const Bot = require("../models/Bot");
 const uploadOnCloudinary = require("../lib/cloudinary");
 
 module.exports = {
@@ -39,11 +40,12 @@ module.exports = {
 
       const chats = await Chat.find({
         userIds: { $in: [userId] },
-      })
-        .populate("userIds lastMessage")
-        .select("-userIds");
+        isBot: false,
+      }).populate("userIds lastMessage");
 
       let chatList = [];
+
+      // Add user chats (No bot)
       for (let chat of chats) {
         let { userIds, lastMessage } = chat;
 
@@ -70,6 +72,46 @@ module.exports = {
           },
         });
       }
+
+      // Add chat bot
+      const chat = await Chat.findOne({
+        userIds: { $in: [userId] },
+        isBot: true,
+      }).populate("lastMessage");
+
+      //  userIds: [botId, userdId]
+      const bot = await Bot.findById(chat.userIds[0]);
+      const user = await User.findById(chat.userIds[1]);
+
+      let users = [
+        {
+          _id: bot._id,
+          name: bot.name,
+          photoURL: bot.photoURL,
+        },
+        {
+          _id: user._id,
+          name: user.name,
+          photoURL: user.photoURL,
+        },
+      ];
+
+      const chatData = chat.toObject(); // to get plain object
+      delete chatData.userIds;
+
+      const sender = await User.findById(chat.lastMessage?.senderId);
+      chatList.unshift({
+        ...chatData,
+        users: users,
+        lastMessage: {
+          _id: chat.lastMessage?._id,
+          senderName: sender?.name,
+          content: chat.lastMessage?.content,
+          attachmentUrl: chat.lastMessage?.attachment?.url,
+        },
+      });
+
+      console.log("chatList: ", chatList);
 
       if (res) {
         res.status(200).json({ data: chatList });

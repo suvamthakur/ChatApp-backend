@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Bot = require("../models/Bot");
+const Chat = require("../models/Chat");
 
 module.exports = {
   signup: async function (req, res) {
@@ -19,6 +21,17 @@ module.exports = {
         secure: process.env.NODE_ENV, // Only set cookies over HTTPS in production
         sameSite: "None", // Allow cross-origin cookies
       });
+
+      // Create a chat with BOT
+      const bot = await Bot.findOne({});
+
+      const chat = await Chat.create({
+        admin: user._id,
+        userIds: [bot._id, user._id],
+        isBot: true,
+      });
+
+      console.log("chat: ", chat);
 
       res.status(201).json({
         msg: "Signup successful",

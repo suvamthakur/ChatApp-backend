@@ -13,6 +13,10 @@ const chatSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  isBot: {
+    type: Boolean,
+    default: false,
+  },
   isGroup: {
     type: Boolean,
     default: false,

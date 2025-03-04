@@ -12,4 +12,6 @@ router.post(
 );
 router.delete("/delete/:messageId", verify, messageController.deleteMessage);
 
+router.post("/ai/:chatId", verify, messageController.getAIresponse);
+
 module.exports = router;
