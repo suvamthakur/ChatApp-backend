@@ -3,43 +3,48 @@ const validator = require("validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const userSchema = mongoose.Schema({
-  name: {
-    type: String,
-    maxLength: [30, "name should be greater than 30 character"],
-    required: true,
-  },
+const userSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+      maxLength: [30, "name should be greater than 30 character"],
+      required: true,
+    },
 
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    required: true,
-    unique: true,
-    match: /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/,
-  },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      required: true,
+      unique: true,
+      match: /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/,
+    },
 
-  password: {
-    type: String,
-    require: true,
-    validate(value) {
-      if (!validator.isStrongPassword(value)) {
-        throw new Error("Enter a strong passsword");
-      }
+    password: {
+      type: String,
+      require: true,
+      validate(value) {
+        if (!validator.isStrongPassword(value)) {
+          throw new Error("Enter a strong passsword");
+        }
+      },
+    },
+
+    photoURL: {
+      type: String,
+      default:
+        "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png",
+      validate(value) {
+        if (!validator.isURL(value)) {
+          throw new Error("Invalid photo url");
+        }
+      },
     },
   },
-
-  photoURL: {
-    type: String,
-    default:
-      "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png",
-    validate(value) {
-      if (!validator.isURL(value)) {
-        throw new Error("Invalid photo url");
-      }
-    },
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Middleware to hash password before save
 userSchema.pre("save", async function (next) {

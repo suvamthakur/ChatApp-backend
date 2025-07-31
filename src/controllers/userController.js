@@ -41,7 +41,9 @@ module.exports = {
       const chats = await Chat.find({
         userIds: { $in: [userId] },
         isBot: false,
-      }).populate("userIds lastMessage");
+      })
+        .populate("userIds lastMessage")
+        .sort({ updatedAt: -1 });
 
       let chatList = [];
 

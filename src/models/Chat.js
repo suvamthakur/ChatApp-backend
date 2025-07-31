@@ -1,43 +1,48 @@
 const mongoose = require("mongoose");
 
-const chatSchema = new mongoose.Schema({
-  admin: {
-    type: mongoose.Types.ObjectId,
-    required: true,
-    ref: "User",
-  },
-  userIds: [
-    {
+const chatSchema = new mongoose.Schema(
+  {
+    admin: {
       type: mongoose.Types.ObjectId,
       required: true,
       ref: "User",
     },
-  ],
-  isBot: {
-    type: Boolean,
-    default: false,
+    userIds: [
+      {
+        type: mongoose.Types.ObjectId,
+        required: true,
+        ref: "User",
+      },
+    ],
+    isBot: {
+      type: Boolean,
+      default: false,
+    },
+    isGroup: {
+      type: Boolean,
+      default: false,
+    },
+    groupName: {
+      type: String,
+      maxLength: [30, "groupName should be less than 30 character"],
+    },
+    groupImage: {
+      type: String,
+      default:
+        "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png",
+    },
+    lastMessage: {
+      type: mongoose.Types.ObjectId,
+      ref: "Message",
+    },
+    blockedBy: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
+    },
   },
-  isGroup: {
-    type: Boolean,
-    default: false,
-  },
-  groupName: {
-    type: String,
-    maxLength: [30, "groupName should be less than 30 character"],
-  },
-  groupImage: {
-    type: String,
-    default:
-      "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png",
-  },
-  lastMessage: {
-    type: mongoose.Types.ObjectId,
-    ref: "Message",
-  },
-  blockedBy: {
-    type: mongoose.Types.ObjectId,
-    ref: "User",
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
 module.exports = mongoose.model("Chat", chatSchema);
