@@ -1,0 +1,13 @@
+runtime: nodejs20
+env: standard
+instance_class: F1 # Free tier eligible
+
+env_variables:
+  NODE_ENV: "production"
+  DB_URL: "mongodb+srv://suvamthakur:suvamatlas@cluster0.cwfhadh.mongodb.net/chatApp"
+  ORIGIN: "https://chatapp-joww.onrender.com"
+  JWT_KEY: "secretkey"
+  CLOUD_NAME: "mycloudinarybucket"
+  CLOUDINARY_API_KEY: "524656942194813"
+  CLOUDINARY_API_SECRET: "0GhIieLVezUJfpVLuc0GVOMJoWE"
+  GEMINI_API: "AIzaSyCwh4-m94TZduH0-wiGxtz60iE0I8ZhE2c"
