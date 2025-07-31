@@ -1,8 +1,11 @@
+const os = require("os");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
-const uploadDir = path.join(__dirname, "./public/temp");
+// This means the images are saved to a system folder that is outside of your project's code.
+const uploadDir = path.join(os.tmpdir(), "temp_uploads");
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

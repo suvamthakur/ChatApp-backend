@@ -19,7 +19,7 @@ module.exports = {
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days from now
         httpOnly: true, // Prevent JavaScript from accessing the cookie
         secure: process.env.NODE_ENV, // Only set cookies over HTTPS in production
-        sameSite: "None", // Allow cross-origin cookies
+        sameSite: "None", // Allow cross-origin cookies *** but in Dev it should be "lax"
       });
 
       // Create a chat with BOT
