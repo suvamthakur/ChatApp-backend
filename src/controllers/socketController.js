@@ -92,6 +92,11 @@ const socketController = (io) => {
       io.to(chatId).emit("new-message", message);
     });
 
+    socket.on("new_actionable_message", (message) => {
+      const chatId = message.chatId.toString();
+      io.to(chatId).emit("new-actionable-message", message);
+    });
+
     socket.on("delete_message", (messageId, chatId) => {
       const chat_id = chatId.toString();
       io.to(chat_id).emit("message_deleted", messageId, chatId);

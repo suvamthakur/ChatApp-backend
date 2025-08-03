@@ -7,11 +7,16 @@ const upload = require("../middlewares/multer.middleware");
 router.post(
   "/create/:chatId",
   verify,
-  upload.single("file"),
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "files", maxCount: 5 },
+  ]),
   messageController.addMessage
 );
 router.delete("/delete/:messageId", verify, messageController.deleteMessage);
 
 router.post("/ai/:chatId", verify, messageController.getAIresponse);
+
+router.get("/actionables", verify, messageController.getActionableMessages);
 
 module.exports = router;

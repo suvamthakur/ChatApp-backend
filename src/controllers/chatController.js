@@ -137,7 +137,7 @@ module.exports = {
       } else {
         messages = await Message.find({ chatId });
 
-        for (message of messages) {
+        for (let message of messages) {
           const user = await User.findById(message.senderId);
 
           if (user) {
