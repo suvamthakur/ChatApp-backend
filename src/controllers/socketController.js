@@ -88,12 +88,14 @@ const socketController = (io) => {
 
     // New Message
     socket.on("new_message", (message) => {
-      const chatId = message.chatId.toString();
+      const chatId = message.chatId._id.toString();
+      console.log("new_message", message);
       io.to(chatId).emit("new-message", message);
     });
 
     socket.on("new_actionable_message", (message) => {
-      const chatId = message.chatId.toString();
+      const chatId = message.chatId._id.toString();
+      console.log("new_actionable_message", message);
       io.to(chatId).emit("new-actionable-message", message);
     });
 

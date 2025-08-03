@@ -4,6 +4,8 @@ const Message = require("../models/Message");
 const Bot = require("../models/Bot");
 const model = require("../lib/gemini");
 
+const MEMORY_LIMIT = 10;
+
 module.exports = {
   addMessage: async function (req, res) {
     try {
@@ -91,6 +93,7 @@ module.exports = {
         lastMessage: message._id,
       });
 
+      await message.populate("senderId chatId payload.targetedUsers");
       const sender = req.user;
       const messageData = {
         ...message.toObject(),
@@ -157,18 +160,45 @@ module.exports = {
       const content = req.body.content;
       const chatId = req.params.chatId;
 
-      const prompt = `Role: You are a helpful chatbot within a chat application. 
-            - Your name is Agent
-            - Name of the developer pf this chat application is Suvam Thakur
+      const prevMessage = [];
+      // Find Previous messages
+      const messages = await Message.find({ chatId: chatId })
+        .sort({
+          createdAt: -1,
+        })
+        .limit(MEMORY_LIMIT);
+
+      messages.forEach((message) => {
+        if (message.senderId.equals(req.user._id)) {
+          prevMessage.push({
+            role: "user",
+            content: message.content,
+          });
+        } else {
+          prevMessage.push({
+            role: "agent | bot | model",
+            content: message.content,
+          });
+        }
+      });
+
+      console.log("prevMessage: ", prevMessage);
+
+      const prompt = `Role: You are a helpful chatbot within a chat application named WebChat. 
+            - Your name is Agent who is a chatbot of WebChat.
+            - Your goal is to provide helpful and informative responses to users.
+            - Your personality is friendly, empathetic, and always willing to help.
+            - Your responses are concise, to the point, and easy to understand.
             
             1.  Respond to user messages in a conversational and friendly manner.
             2.  If the user asks a question, provide a concise and accurate answer.
-            3.  If you don't know the answer or the query is irrelevant, respond with "I'm sorry, I don't understand" or "I'm not able to help with that."
-            4. If the user makes a statement, acknowledge it appropriately.
-            5. Keep your responses short and to the point.
-            6. If given previous conversation, consider it when creating your response.
+            3.  If the user asks for information, provide the information.
+            4.  If the user makes a statement, acknowledge it appropriately.
+            5.  Keep your responses short and to the point.
+            6.  If given previous conversation, consider it when creating your response.
 
-            User Message: ${content}
+            Previous Conversation: ${JSON.stringify(prevMessage.reverse())}
+            New Message By User: ${content}
 
             Response:`;
       const result = await model.generateContent(prompt);
@@ -183,7 +213,14 @@ module.exports = {
         content: msg,
       });
 
-      res.status(200).json({ data: message });
+      await message.populate("chatId payload.targetedUsers");
+
+      const finalMessage = {
+        ...message.toObject(),
+        senderId: bot,
+      };
+
+      res.status(200).json({ data: finalMessage });
     } catch (err) {
       res.status(400).json({ msg: err.message });
     }
