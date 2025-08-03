@@ -205,7 +205,7 @@ module.exports = {
           { senderId: userId }, // Created by the user
           { "payload.targetedUsers": userId }, // Assigned to user
         ],
-      }).populate("senderId chatId");
+      }).populate("senderId chatId payload.targetedUsers");
 
       res.status(200).json({ data: messages });
     } catch (err) {
