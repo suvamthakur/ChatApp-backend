@@ -12,6 +12,11 @@ const messageSchema = new mongoose.Schema(
       required: true,
       ref: "Chat",
     },
+    type: {
+      type: String,
+      enum: ["text", "event", "task"],
+      default: "text",
+    },
     content: {
       type: String,
       maxLength: [1200, "message should be less than 1200 characters"],
@@ -31,6 +36,35 @@ const messageSchema = new mongoose.Schema(
     replyTo: {
       type: Object,
       default: null,
+    },
+    // For event/task
+    payload: {
+      title: {
+        type: String,
+        required: false,
+      },
+      description: {
+        type: String,
+      },
+      attachments: [
+        {
+          type: {
+            type: String,
+          },
+          name: {
+            type: String,
+          },
+          url: {
+            type: String,
+          },
+        },
+      ],
+      targetedUsers: [
+        {
+          type: mongoose.Types.ObjectId,
+          ref: "User",
+        },
+      ],
     },
   },
   { timestamps: true }

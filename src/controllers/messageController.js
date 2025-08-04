@@ -4,14 +4,19 @@ const Message = require("../models/Message");
 const Bot = require("../models/Bot");
 const model = require("../lib/gemini");
 
+const MEMORY_LIMIT = 10;
+
 module.exports = {
   addMessage: async function (req, res) {
     try {
       const senderId = req.user._id;
       const chatId = req.params.chatId;
 
-      const content = req.body.content;
-      const replyTo = req.body.replyTo && JSON.parse(req.body.replyTo);
+      let { content, replyTo, type, payload } = req.body;
+
+      if (type != "text" && type != "event" && type != "task") {
+        throw new Error("Invalid type");
+      }
 
       const chatData = await Chat.findById(chatId);
       if (!chatData) {
@@ -24,31 +29,63 @@ module.exports = {
         throw new Error("You are not part of this chat");
       }
 
-      // If file exists
-      let attachment;
-      if (req.file) {
-        // upto 40mb (41943040 byte)
-        if (req.file.size > 41943040) {
+      let attachments = [];
+
+      // Single file provided - file
+      if (req.files?.file?.[0]) {
+        const file = req.files.file[0];
+
+        if (file.size > 41943040) {
           throw new Error("File size should be less than 40mb");
         }
 
-        attachment = {};
-        attachment.type = req.file.mimetype;
-        attachment.name = req.file.originalname;
+        const response = await uploadOnCloudinary(file.path);
 
-        // Upload on cloudinary
-        const response = await uploadOnCloudinary(req.file.path);
-        attachment.url = response.url;
-      } else {
-        attachment = null;
+        attachments.push({
+          url: response.url,
+          name: file.originalname,
+          type: file.mimetype,
+        });
       }
+
+      // Multiple files provided - files
+      if (req.files?.files?.length > 0) {
+        console.log("files - Actionable Message");
+        if (req.files.files.length > 5) {
+          throw new Error("You can only upload 5 files");
+        }
+        for (const file of req.files.files) {
+          if (file.size > 41943040) continue;
+
+          const response = await uploadOnCloudinary(file.path);
+
+          attachments.push({
+            url: response.url,
+            name: file.originalname,
+            type: file.mimetype,
+          });
+        }
+      }
+      console.log("Attachments", attachments);
+      console.log("pre payload", payload);
+
+      payload = payload ? JSON.parse(payload) : null;
+      if (type === "event" || type === "task") {
+        if (!payload) throw new Error("Payload is required");
+
+        payload.attachments = attachments;
+      }
+      console.log("final payload", payload);
 
       const message = await Message.create({
         senderId,
         chatId,
         content,
-        attachment,
-        replyTo,
+        attachment:
+          attachments.length && type === "text" ? attachments[0] : null,
+        replyTo: replyTo ? JSON.parse(replyTo) : null,
+        type,
+        payload: payload,
       });
 
       // Update lastMessage in the Chat
@@ -56,6 +93,7 @@ module.exports = {
         lastMessage: message._id,
       });
 
+      await message.populate("senderId chatId payload.targetedUsers");
       const sender = req.user;
       const messageData = {
         ...message.toObject(),
@@ -122,18 +160,45 @@ module.exports = {
       const content = req.body.content;
       const chatId = req.params.chatId;
 
-      const prompt = `Role: You are a helpful chatbot within a chat application. 
-            - Your name is Agent
-            - Name of the developer pf this chat application is Suvam Thakur
+      const prevMessage = [];
+      // Find Previous messages
+      const messages = await Message.find({ chatId: chatId })
+        .sort({
+          createdAt: -1,
+        })
+        .limit(MEMORY_LIMIT);
+
+      messages.forEach((message) => {
+        if (message.senderId.equals(req.user._id)) {
+          prevMessage.push({
+            role: "user",
+            content: message.content,
+          });
+        } else {
+          prevMessage.push({
+            role: "agent | bot | model",
+            content: message.content,
+          });
+        }
+      });
+
+      console.log("prevMessage: ", prevMessage);
+
+      const prompt = `Role: You are a helpful chatbot within a chat application named WebChat. 
+            - Your name is Agent who is a chatbot of WebChat.
+            - Your goal is to provide helpful and informative responses to users.
+            - Your personality is friendly, empathetic, and always willing to help.
+            - Your responses are concise, to the point, and easy to understand.
             
             1.  Respond to user messages in a conversational and friendly manner.
             2.  If the user asks a question, provide a concise and accurate answer.
-            3.  If you don't know the answer or the query is irrelevant, respond with "I'm sorry, I don't understand" or "I'm not able to help with that."
-            4. If the user makes a statement, acknowledge it appropriately.
-            5. Keep your responses short and to the point.
-            6. If given previous conversation, consider it when creating your response.
+            3.  If the user asks for information, provide the information.
+            4.  If the user makes a statement, acknowledge it appropriately.
+            5.  Keep your responses short and to the point.
+            6.  If given previous conversation, consider it when creating your response.
 
-            User Message: ${content}
+            Previous Conversation: ${JSON.stringify(prevMessage.reverse())}
+            New Message By User: ${content}
 
             Response:`;
       const result = await model.generateContent(prompt);
@@ -148,7 +213,38 @@ module.exports = {
         content: msg,
       });
 
-      res.status(200).json({ data: message });
+      await message.populate("chatId payload.targetedUsers");
+
+      const finalMessage = {
+        ...message.toObject(),
+        senderId: bot,
+      };
+
+      res.status(200).json({ data: finalMessage });
+    } catch (err) {
+      res.status(400).json({ msg: err.message });
+    }
+  },
+
+  getActionableMessages: async function (req, res) {
+    try {
+      const userId = req.user._id;
+
+      // Find all chats
+      const userChats = await Chat.find({ userIds: { $in: [userId] } });
+      const chatIds = userChats.map((chat) => chat._id);
+
+      // Get actionable messages
+      const messages = await Message.find({
+        chatId: { $in: chatIds },
+        type: { $in: ["event", "task"] },
+        $or: [
+          { senderId: userId }, // Created by the user
+          { "payload.targetedUsers": userId }, // Assigned to user
+        ],
+      }).populate("senderId chatId payload.targetedUsers");
+
+      res.status(200).json({ data: messages });
     } catch (err) {
       res.status(400).json({ msg: err.message });
     }

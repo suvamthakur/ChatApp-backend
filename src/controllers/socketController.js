@@ -1,4 +1,9 @@
+// socket.to -> Sending event excluding the sender
+// io.to -> Sending event to all the users in the room including the sender
+
 const { getUserChats } = require("./userController");
+
+const onlineUsers = new Map();
 
 const socketController = (io) => {
   io.on("connection", async (socket) => {
@@ -9,6 +14,12 @@ const socketController = (io) => {
       socket.join(chat._id.toString());
     });
     socket.join(userId.toString()); // In future we can get this user's socket because of this room
+
+    onlineUsers.set(userId.toString(), socket.id);
+    // Emit online status to all users
+    userChats.forEach((chat) => {
+      socket.to(chat._id.toString()).emit("user-online", userId);
+    });
 
     // New chat created
     socket.on("create_chat", (chatData, users) => {
@@ -88,8 +99,15 @@ const socketController = (io) => {
 
     // New Message
     socket.on("new_message", (message) => {
-      const chatId = message.chatId.toString();
+      const chatId = message.chatId._id.toString();
+      console.log("new_message", message);
       io.to(chatId).emit("new-message", message);
+    });
+
+    socket.on("new_actionable_message", (message) => {
+      const chatId = message.chatId._id.toString();
+      console.log("new_actionable_message", message);
+      io.to(chatId).emit("new-actionable-message", message);
     });
 
     socket.on("delete_message", (messageId, chatId) => {
@@ -97,7 +115,36 @@ const socketController = (io) => {
       io.to(chat_id).emit("message_deleted", messageId, chatId);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("check_online_status", (otherUserId, callback) => {
+      const isOnline = onlineUsers.has(otherUserId);
+      callback({ isOnline });
+    });
+
+    // Online status of members in a group
+    socket.on("check_group_status", (chatId, callback) => {
+      const chatRoom = io.sockets.adapter.rooms.get(chatId);
+      if (!chatRoom) {
+        callback({});
+        return;
+      }
+
+      const onlineMemberIds = {};
+      onlineUsers.forEach((socketId, userId) => {
+        // Find socketId of the user, Check if user is in the chatRoom
+        if (io.sockets.sockets.get(socketId)?.rooms.has(chatId)) {
+          onlineMemberIds[userId] = true;
+        }
+      });
+      callback(onlineMemberIds);
+    });
+
+    socket.on("disconnect", async () => {
+      onlineUsers.delete(userId.toString());
+      const userChats = await getUserChats({ user: { _id: userId } }, null);
+      userChats.forEach((chat) => {
+        socket.to(chat._id.toString()).emit("user-offline", userId);
+      });
+
       userChats.forEach((chat) => {
         socket.leave(chat._id.toString());
       });

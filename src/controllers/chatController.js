@@ -133,11 +133,13 @@ module.exports = {
       // Without control block .populate() will give error because of chatbot message
       let messages;
       if (!chat.isBot) {
-        messages = await Message.find({ chatId }).populate("senderId");
+        messages = await Message.find({ chatId }).populate(
+          "senderId chatId payload.targetedUsers"
+        );
       } else {
         messages = await Message.find({ chatId });
 
-        for (message of messages) {
+        for (let message of messages) {
           const user = await User.findById(message.senderId);
 
           if (user) {
@@ -153,7 +155,7 @@ module.exports = {
       messages.forEach((message) => {
         const {
           _id,
-          senderId: { _id: senderId, name, photoURL },
+          senderId: { name, photoURL },
           attachment,
           content,
           replyTo,
@@ -162,7 +164,7 @@ module.exports = {
         messageList.push({
           _id,
           name,
-          senderId,
+          senderId: message.senderId,
           photoURL,
           attachment,
           content,
