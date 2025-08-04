@@ -120,6 +120,24 @@ const socketController = (io) => {
       callback({ isOnline });
     });
 
+    // Online status of members in a group
+    socket.on("check_group_status", (chatId, callback) => {
+      const chatRoom = io.sockets.adapter.rooms.get(chatId);
+      if (!chatRoom) {
+        callback({});
+        return;
+      }
+
+      const onlineMemberIds = {};
+      onlineUsers.forEach((socketId, userId) => {
+        // Find socketId of the user, Check if user is in the chatRoom
+        if (io.sockets.sockets.get(socketId)?.rooms.has(chatId)) {
+          onlineMemberIds[userId] = true;
+        }
+      });
+      callback(onlineMemberIds);
+    });
+
     socket.on("disconnect", async () => {
       onlineUsers.delete(userId.toString());
       const userChats = await getUserChats({ user: { _id: userId } }, null);
