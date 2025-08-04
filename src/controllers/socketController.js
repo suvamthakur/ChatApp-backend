@@ -1,4 +1,9 @@
+// socket.to -> Sending event excluding the sender
+// io.to -> Sending event to all the users in the room including the sender
+
 const { getUserChats } = require("./userController");
+
+const onlineUsers = new Map();
 
 const socketController = (io) => {
   io.on("connection", async (socket) => {
@@ -9,6 +14,12 @@ const socketController = (io) => {
       socket.join(chat._id.toString());
     });
     socket.join(userId.toString()); // In future we can get this user's socket because of this room
+
+    onlineUsers.set(userId.toString(), socket.id);
+    // Emit online status to all users
+    userChats.forEach((chat) => {
+      socket.to(chat._id.toString()).emit("user-online", userId);
+    });
 
     // New chat created
     socket.on("create_chat", (chatData, users) => {
@@ -104,7 +115,18 @@ const socketController = (io) => {
       io.to(chat_id).emit("message_deleted", messageId, chatId);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("check_online_status", (otherUserId, callback) => {
+      const isOnline = onlineUsers.has(otherUserId);
+      callback({ isOnline });
+    });
+
+    socket.on("disconnect", async () => {
+      onlineUsers.delete(userId.toString());
+      const userChats = await getUserChats({ user: { _id: userId } }, null);
+      userChats.forEach((chat) => {
+        socket.to(chat._id.toString()).emit("user-offline", userId);
+      });
+
       userChats.forEach((chat) => {
         socket.leave(chat._id.toString());
       });
