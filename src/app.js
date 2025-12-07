@@ -7,7 +7,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const socketController = require("./controllers/socketController");
 const { instrument } = require("@socket.io/admin-ui");
-const port = process.env.PORT;
+const port = process.env.PORT || 5000;
 
 const { createServer } = require("http");
 const server = createServer(app);
@@ -56,4 +56,5 @@ connectDB()
   })
   .catch((err) => {
     console.log("Database cannot be connected");
+    console.error(err);
   });
