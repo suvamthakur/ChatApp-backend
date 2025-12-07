@@ -1,6 +1,9 @@
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.prod # Mandotroy for custom Dockerfile
+
     container_name: "chatapp_be_container"
     image: "chatapp_be_image"
 
